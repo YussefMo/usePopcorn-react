@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useMovie } from "./useMovie";
 import NavBar from "./NavBar/NavBar"
 import Logo from "./NavBar/nav-comp/Logo";
 import Search from "./NavBar/nav-comp/Search";
@@ -13,14 +14,11 @@ import ErrorMessage from "./UI/ErrorMessage";
 import SelectedMovie from "./SelectedMovie/SelectedMovie";
 
 
-const KEY = '9663d7c7'
 
 function Container() {
     const [query, setQuery] = useState("");
-    const [movies, setMovies] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [getError, setGetError] = useState("");
     const [selectId, setSelectId] = useState(null)
+    const { movies, isLoading, getError } = useMovie(query , handelCloseSelectedMovie)
     const [watched, setWatched] = useState(function(){
         const stored = localStorage.getItem("watched")
         if (stored){
@@ -30,6 +28,7 @@ function Container() {
         }
     });
 
+
     function handelSelectedId(id) {
         setSelectId((selectedId) => selectedId === id ? null : id)
     }
@@ -37,54 +36,6 @@ function Container() {
     function handelCloseSelectedMovie () {
         setSelectId(null)
     }
-
-    useEffect(function () {
-        const controller = new AbortController()
-        async function fetchMove() {
-            try {
-                setIsLoading(true)
-                setGetError("")
-
-                const res = await fetch(`https://www.omdbapi.com/?apikey=${KEY}&s=${query}` , 
-                { signal : controller.signal })
-                if (!res.ok) {
-                    throw new Error("Something went wrong with fetching movies")
-                }
-
-                const data = await res.json();
-                if (data.Response === "False") {
-                    throw new Error("Movie not found Pleas Cheek your Input");
-                }
-
-                setMovies(data.Search)
-                setGetError("")
-            } catch (err) {
-                if (err.name !== "AbortError") {
-                    console.error(err.message)
-                    setGetError(err.message);
-                }
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        if (query.length < 3) {
-            handelCloseSelectedMovie()
-            setMovies([])
-            setGetError("")
-            return
-        } else if (query.trim() === "") {
-            handelCloseSelectedMovie()
-            setMovies([])
-            setGetError("")
-            return
-        }
-        handelCloseSelectedMovie()
-        fetchMove()
-
-        return function () {
-            controller.abort()
-        }
-    }, [query])
 
     function handelAddWatched(movie) {
         setWatched((prev) => [...prev, movie])
